@@ -21,6 +21,11 @@ CORE_RUSSIAN_WORDS: dict[str, tuple[str, str]] = {
     "\u0441\u043e": ("so", "with; from"),
     "\u043d\u0430": ("na", "on; at; to"),
     "\u043d\u0435": ("n\u02b2e", "not"),
+    "\u0434\u0430": ("da", "yes; and; but"),
+    "\u043a\u0430\u043a": ("kak", "how; as; like"),
+    "\u0435\u0441\u043b\u0438": ("\u02c8jesl\u02b2i", "if"),
+    "\u0442\u0430\u043a": ("tak", "so; thus; like that"),
+    "\u0436\u0435": ("\u0290e", "emphatic particle; same; however"),
     "\u0447\u0442\u043e": ("\u0282to", "what; that"),
     "\u044d\u0442\u043e": ("\u02c8eto", "this; it"),
     "\u0441\u0435\u0433\u043e\u0434\u043d\u044f": ("s\u02b2\u026a\u02c8vodn\u02b2\u0259", "today"),
@@ -34,9 +39,26 @@ CORE_RUSSIAN_WORDS: dict[str, tuple[str, str]] = {
     "\u043e\u043f\u0440\u0435\u0434\u0435\u043b\u044f\u0442\u044c": ("\u0250pr\u02b2\u026ad\u02b2\u026a\u02c8l\u02b2at\u02b2", "to define; to determine"),
 }
 
+_CLITIC_SUFFIXES = ("-\u0442\u043e", "-\u0436\u0435", "-\u043b\u0438", "-\u043a\u0430", "-\u043d\u0438\u0431\u0443\u0434\u044c")
+
+
+def dictionary_lookup_candidates(lemma: str) -> list[str]:
+    candidates = [lemma]
+    for suffix in _CLITIC_SUFFIXES:
+        if lemma.endswith(suffix):
+            base = lemma[: -len(suffix)]
+            if base:
+                candidates.append(base)
+            break
+    return candidates
+
 
 def lookup_core_word(lemma: str) -> WordInfo | None:
-    match = CORE_RUSSIAN_WORDS.get(lemma)
+    match = None
+    for lookup in dictionary_lookup_candidates(lemma):
+        match = CORE_RUSSIAN_WORDS.get(lookup)
+        if match:
+            break
     if not match:
         return None
     ipa, english = match

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .anki import AnkiCard, AnkiConnectClient
-from .core_words import lookup_core_word
+from .core_words import dictionary_lookup_candidates, lookup_core_word
 from .db import LearnerDb
 from .ipa import approximate_russian_ipa
 from .language import RussianLemmatizer, unique_lemmas
@@ -147,14 +147,16 @@ class VideoProcessor:
         )
 
     def _lookup_word(self, lemma: str, language: str, errors: list[str]) -> WordInfo:
-        core_info = lookup_core_word(lemma)
-        if core_info:
-            return core_info
-        try:
-            info = self.wiktionary.lookup(lemma)
-        except Exception as exc:
-            errors.append(f"Wiktionary lookup failed for {lemma}: {exc}")
-            info = WordInfo(lemma=lemma, ipa="", english="", source_url="")
+        info = self._lookup_wiktionary_first(lemma, errors)
+        if not info.english:
+            core_info = lookup_core_word(lemma)
+            if core_info:
+                info = WordInfo(
+                    lemma=lemma,
+                    ipa=info.ipa or core_info.ipa,
+                    english=core_info.english,
+                    source_url=info.source_url or core_info.source_url,
+                )
         if not info.ipa:
             info = WordInfo(
                 lemma=info.lemma,
@@ -163,3 +165,24 @@ class VideoProcessor:
                 source_url=info.source_url,
             )
         return info
+
+    def _lookup_wiktionary_first(self, lemma: str, errors: list[str]) -> WordInfo:
+        best = WordInfo(lemma=lemma, ipa="", english="", source_url="")
+        for candidate in dictionary_lookup_candidates(lemma):
+            try:
+                info = self.wiktionary.lookup(candidate)
+            except Exception as exc:
+                errors.append(f"Wiktionary lookup failed for {candidate}: {exc}")
+                continue
+            if info.english:
+                return WordInfo(
+                    lemma=lemma,
+                    ipa=info.ipa,
+                    english=info.english,
+                    source_url=info.source_url,
+                )
+            if info.source_url and not best.source_url:
+                best = WordInfo(lemma=lemma, ipa=best.ipa, english="", source_url=info.source_url)
+            if info.ipa and not best.ipa:
+                best = WordInfo(lemma=lemma, ipa=info.ipa, english="", source_url=info.source_url or best.source_url)
+        return best
