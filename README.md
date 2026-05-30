@@ -12,7 +12,7 @@ Local Chrome extension + Python service for turning captioned YouTube videos int
 - Splits captions into timestamped sentences.
 - Clips sentence audio with `ffmpeg`.
 - Finds new Russian lemmas using a local SQLite learner database.
-- Translates full sentences to English with DeepL.
+- Translates full sentences to English with free offline Argos Translate by default.
 - Gets Russian word glosses and IPA from Wiktionary when available.
 - Creates Anki cards through AnkiConnect.
 
@@ -21,10 +21,13 @@ Local Chrome extension + Python service for turning captioned YouTube videos int
 ### Easy Windows Setup
 
 1. Double-click `install.bat`.
-2. When it finishes, open `.env` and paste your DeepL API key after `DEEPL_AUTH_KEY=`.
-3. Start Anki and make sure the AnkiConnect add-on is installed.
-4. Double-click `start_service.bat` and leave that window open.
-5. Load the Chrome extension from the `extension` folder.
+2. Start Anki and make sure the AnkiConnect add-on is installed.
+3. Double-click `start_service.bat` and leave that window open.
+4. Load the Chrome extension from the `extension` folder.
+
+No translation API key is required by default. The first translation run may download an Argos Russian-to-English model.
+
+Optional: if you want DeepL later, open `.env`, set `TRANSLATION_PROVIDER=deepl`, and paste your DeepL key after `DEEPL_AUTH_KEY=`.
 
 The installer creates a local `.venv`, installs Python dependencies, and uses Python-installed `yt-dlp` plus bundled `ffmpeg` support. You should not need to manually install `yt-dlp` or `ffmpeg`.
 
@@ -43,7 +46,7 @@ Chrome itself cannot be installed silently by this project, and Chrome does not 
    pip install -r requirements.txt
    ```
 
-3. Copy `.env.example` to `.env` and set `DEEPL_AUTH_KEY`.
+3. Copy `.env.example` to `.env`.
 4. Start Anki.
 5. Run the service:
 
@@ -99,6 +102,7 @@ govorit (govorit, /govorit/) - to speak
 
 - V1 stops if no usable transcript exists. It does not run Whisper.
 - IPA is only taken from Wiktionary. Missing IPA is left blank.
+- Sentence translation uses Argos Translate by default. Set `TRANSLATION_PROVIDER=deepl` only if you want to use a DeepL API key.
 - The first time a lemma is encountered, the sentence can become a card. Seen lemmas are tracked in `data/learner.sqlite3`.
 - The local service defaults to port `8766` so it does not conflict with AnkiConnect on `8765`.
 

@@ -5,11 +5,11 @@ from pathlib import Path
 
 from .anki import AnkiCard, AnkiConnectClient
 from .db import LearnerDb
-from .deepl_client import DeepLClient
 from .language import RussianLemmatizer, unique_lemmas
 from .media import clip_audio, fetch_video_assets
 from .settings import Settings
 from .transcript import cues_to_sentences
+from .translation import TranslationRequest, create_translator
 from .wiktionary import WiktionaryClient, WordInfo
 
 
@@ -46,13 +46,11 @@ class VideoProcessor:
         self.db = LearnerDb(settings.db_path)
         self.lemmatizer = RussianLemmatizer()
         self.wiktionary = WiktionaryClient()
-        self.deepl = DeepLClient(settings.deepl_auth_key)
+        self.translator = create_translator(settings)
         self.anki = AnkiConnectClient(settings.anki_connect_url)
 
     def process(self, video_url: str, language: str | None = None) -> ProcessResult:
         language = language or self.settings.learner_language
-        if not self.settings.deepl_auth_key:
-            raise RuntimeError("DEEPL_AUTH_KEY is required before creating Anki cards.")
 
         self.settings.media_dir.mkdir(parents=True, exist_ok=True)
         work_dir = self.settings.media_dir / "downloads"
@@ -75,10 +73,12 @@ class VideoProcessor:
 
             word_infos = [self._lookup_word(lemma, errors) for lemma in new_lemmas]
             glosses = "\n".join(format_gloss(lemma, info) for lemma, info in zip(new_lemmas, word_infos))
-            translation = self.deepl.translate(
-                sentence.text,
-                source_lang=language,
-                target_lang=self.settings.target_language,
+            translation = self.translator.translate(
+                TranslationRequest(
+                    text=sentence.text,
+                    source_lang=language,
+                    target_lang=self.settings.target_language,
+                )
             )
 
             audio_clip: Path | None = None

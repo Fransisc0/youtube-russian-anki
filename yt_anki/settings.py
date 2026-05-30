@@ -16,6 +16,8 @@ if load_dotenv:
 
 @dataclass(frozen=True)
 class Settings:
+    translation_provider: str
+    argos_auto_install: bool
     deepl_auth_key: str
     service_host: str
     service_port: int
@@ -38,6 +40,8 @@ class Settings:
 def get_settings() -> Settings:
     data_dir = Path(os.getenv("DATA_DIR", "data"))
     return Settings(
+        translation_provider=os.getenv("TRANSLATION_PROVIDER", "argos"),
+        argos_auto_install=os.getenv("ARGOS_AUTO_INSTALL", "true").lower() in {"1", "true", "yes"},
         deepl_auth_key=os.getenv("DEEPL_AUTH_KEY", ""),
         service_host=os.getenv("SERVICE_HOST", "127.0.0.1"),
         service_port=int(os.getenv("SERVICE_PORT", "8766")),

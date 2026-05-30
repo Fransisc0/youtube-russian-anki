@@ -62,9 +62,10 @@ if (!(Test-Path ".env")) {
 
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "1. Open .env and paste your DeepL API key after DEEPL_AUTH_KEY="
-Write-Host "2. Install AnkiConnect in Anki using add-on code 2055492159"
-Write-Host "3. Double-click start_service.bat"
-Write-Host "4. In Chrome, open chrome://extensions and load the extension folder"
+Write-Host "1. Install AnkiConnect in Anki using add-on code 2055492159"
+Write-Host "2. Double-click start_service.bat"
+Write-Host "3. In Chrome, open chrome://extensions and load the extension folder"
+Write-Host ""
+Write-Host "No DeepL key is required by default. Argos Translate is used locally."
 
 exit 0
