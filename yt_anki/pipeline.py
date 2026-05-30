@@ -7,6 +7,7 @@ from .anki import AnkiCard, AnkiConnectClient
 from .db import LearnerDb
 from .language import RussianLemmatizer, unique_lemmas
 from .media import clip_audio, fetch_video_assets
+from .progress import ProgressCallback
 from .settings import Settings
 from .transcript import cues_to_sentences
 from .translation import TranslationRequest, create_translator
@@ -55,20 +56,27 @@ class VideoProcessor:
         video_url: str,
         language: str | None = None,
         repair: bool = False,
+        progress: ProgressCallback | None = None,
     ) -> ProcessResult:
         language = language or self.settings.learner_language
+        progress = progress or (lambda message, current=None, total=None: None)
 
+        progress("Preparing folders", None, None)
         self.settings.media_dir.mkdir(parents=True, exist_ok=True)
         work_dir = self.settings.media_dir / "downloads"
+        progress("Downloading transcript and audio", None, None)
         assets = fetch_video_assets(video_url, language, work_dir)
+        progress("Building sentence list", None, None)
         sentences = cues_to_sentences(assets.captions)
         if not sentences:
             raise RuntimeError("Transcript was downloaded, but no full sentences could be built.")
 
+        progress("Preparing Anki deck and note type", None, None)
         self.anki.ensure_deck(self.settings.anki_deck_name)
         self.anki.ensure_model(self.settings.anki_model_name)
         cards_deleted = 0
         if repair:
+            progress("Deleting old cards for this video", None, None)
             cards_deleted = self.anki.delete_cards_for_video(
                 self.settings.anki_deck_name,
                 self.settings.anki_model_name,
@@ -79,6 +87,7 @@ class VideoProcessor:
         errors: list[str] = []
 
         for index, sentence in enumerate(sentences, start=1):
+            progress("Finding new words", index, len(sentences))
             lemma_surfaces = unique_lemmas(self.lemmatizer.extract(sentence.text))
             if repair:
                 new_lemmas = list(lemma_surfaces)
@@ -87,8 +96,10 @@ class VideoProcessor:
             if not new_lemmas:
                 continue
 
+            progress("Looking up word meanings and IPA", index, len(sentences))
             word_infos = [self._lookup_word(lemma, language, errors) for lemma in new_lemmas]
             glosses = "\n".join(format_gloss(lemma, info) for lemma, info in zip(new_lemmas, word_infos))
+            progress("Translating sentence", index, len(sentences))
             translation = self.translator.translate(
                 TranslationRequest(
                     text=sentence.text,
@@ -99,6 +110,7 @@ class VideoProcessor:
 
             audio_clip: Path | None = None
             try:
+                progress("Clipping sentence audio", index, len(sentences))
                 audio_clip = clip_audio(
                     assets.audio_path,
                     sentence.start,
@@ -117,10 +129,12 @@ class VideoProcessor:
                 video_url=video_url,
                 timestamp=format_timestamp(sentence.start),
             )
+            progress("Adding card to Anki", index, len(sentences))
             self.anki.add_card(self.settings.anki_deck_name, self.settings.anki_model_name, card)
             self.db.mark_seen(new_lemmas, language, video_url, sentence.text)
             cards_created += 1
 
+        progress("Saving video history", len(sentences), len(sentences))
         self.db.mark_video(video_url, language, cards_created)
         return ProcessResult(
             video_title=assets.video_title,

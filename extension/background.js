@@ -82,6 +82,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
 
+    if (message.type === "YT_ANKI_JOB_STATUS") {
+      sendResponse({
+        ok: true,
+        payload: await getJson(`${config.serviceUrl}/jobs/${message.jobId}`)
+      });
+      return;
+    }
+
     if (message.type === "YT_ANKI_PROCESS") {
       const payload = await postJson(`${config.serviceUrl}/process`, {
         video_url: message.videoUrl,

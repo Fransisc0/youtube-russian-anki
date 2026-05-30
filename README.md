@@ -75,6 +75,8 @@ Chrome itself cannot be installed silently by this project, and Chrome does not 
 
 If cards for a video were created incorrectly, click the injected "Repair" button on that same YouTube video page. Repair deletes this video's old generated notes, ignores the seen-word database for that run, rebuilds the sentence audio clips, and recreates the cards.
 
+While Anki or Repair is running, the YouTube status pill shows the active step, such as downloading transcript/audio, looking up IPA and word meanings, translating, clipping audio, or adding cards to Anki.
+
 ## Chrome Extension
 
 The unpacked extension lives in `extension/`.

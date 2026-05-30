@@ -49,6 +49,36 @@ function setStatus(text, tone = "idle") {
   status.style.color = color;
 }
 
+function formatProgress(payload) {
+  if (!payload) {
+    return "Waiting";
+  }
+  const hasCount = Number.isInteger(payload.current) && Number.isInteger(payload.total);
+  const count = hasCount ? ` ${payload.current}/${payload.total}` : "";
+  return `${payload.message || payload.state || "Working"}${count}`;
+}
+
+async function pollJob(jobId, button, label, repair) {
+  while (true) {
+    const response = await sendMessage({ type: "YT_ANKI_JOB_STATUS", jobId });
+    if (!response?.ok) {
+      throw new Error(response?.error || "Could not read job status");
+    }
+    const status = response.payload;
+    if (status.state === "complete") {
+      return status.result || {};
+    }
+    if (status.state === "error") {
+      throw new Error(status.error || "Processing failed");
+    }
+    const text = formatProgress(status);
+    setStatus(text, "work");
+    button.textContent = repair ? "Repairing..." : "Working...";
+    button.title = text;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
+
 function makeLanguageSelect() {
   const select = document.createElement("select");
   select.id = SELECT_ID;
@@ -130,24 +160,31 @@ function makeProcessButton({ id, label, title, repair, background, color }) {
       setStatus("No video", "error");
       return;
     }
-    const response = await sendMessage({
-      type: "YT_ANKI_PROCESS",
-      videoUrl,
-      language: selectedLanguage(),
-      repair
-    });
-    button.disabled = false;
-    if (!response?.ok) {
+    let result;
+    try {
+      const response = await sendMessage({
+        type: "YT_ANKI_PROCESS",
+        videoUrl,
+        language: selectedLanguage(),
+        repair
+      });
+      if (!response?.ok) {
+        throw new Error(response?.error || "Could not create cards");
+      }
+      result = await pollJob(response.payload.job_id, button, label, repair);
+    } catch (error) {
+      button.disabled = false;
       button.textContent = "Error";
-      button.title = response?.error || "Could not create cards";
-      setStatus(response?.error || "Failed", "error");
+      button.title = error.message || "Could not create cards";
+      setStatus(error.message || "Failed", "error");
       setTimeout(() => {
         button.textContent = label;
       }, 4000);
       return;
     }
-    const count = response.payload.cards_created;
-    const deleted = response.payload.cards_deleted || 0;
+    button.disabled = false;
+    const count = result.cards_created || 0;
+    const deleted = result.cards_deleted || 0;
     button.textContent = repair ? `Fixed ${count}` : `Added ${count}`;
     button.title = repair
       ? `Deleted ${deleted} old cards and created ${count} cards`
