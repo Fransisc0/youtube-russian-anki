@@ -48,6 +48,7 @@ def _run(args: list[str], cwd: Path) -> None:
 
 def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> VideoAssets:
     yt_dlp = yt_dlp_command()
+    ffmpeg = ffmpeg_command()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     info = json.loads(
@@ -98,6 +99,8 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
             "-x",
             "--audio-format",
             "mp3",
+            "--ffmpeg-location",
+            ffmpeg,
             "-o",
             output_template,
             video_url,

@@ -46,6 +46,15 @@ if ($null -eq $python) {
 }
 
 Write-Host "Creating local Python environment..."
+$venvPython = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+if (Test-Path $venvPython) {
+    try {
+        & $venvPython -c "import sys; print(sys.version)" | Out-Null
+    } catch {
+        Write-Host "Existing .venv is broken; recreating it..."
+        Remove-Item -Recurse -Force ".venv"
+    }
+}
 Invoke-Python -Python $python -Arguments @("-m", "venv", ".venv")
 
 Write-Host "Upgrading pip..."
