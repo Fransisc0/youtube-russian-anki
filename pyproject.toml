@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "youtube-russian-anki"
+version = "0.1.0"
+description = "Create Anki sentence cards from captioned YouTube videos."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "fransisc0" }]
+dependencies = [
+  "fastapi>=0.111",
+  "uvicorn[standard]>=0.30",
+  "requests>=2.32",
+  "python-dotenv>=1.0",
+  "pymorphy3>=2.0",
+  "yt-dlp>=2025.1.15"
+]
+
+[project.urls]
+Homepage = "https://github.com/fransisc0/youtube-russian-anki"
+Issues = "https://github.com/fransisc0/youtube-russian-anki/issues"
+
+[tool.setuptools.packages.find]
+include = ["yt_anki*"]
