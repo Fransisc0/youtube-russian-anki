@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Callable
 from urllib.parse import quote
 
 
@@ -18,10 +19,18 @@ _GLOSS_RE = re.compile(r"^#\s+(?![:*#])(.+)$", re.MULTILINE)
 _TEMPLATE_RE = re.compile(r"\{\{[^{}]*\}\}")
 _LINK_RE = re.compile(r"\[\[(?:[^|\]]*\|)?([^\]]+)\]\]")
 _REF_RE = re.compile(r"<ref[^>]*>.*?</ref>|<ref[^>]*/>", re.DOTALL)
+_RU_EN_TRANSLATION_RE = re.compile(r"^\|\s*en\s*=\s*(.+)$", re.MULTILINE)
+_RU_EN_TEMPLATE_RE = re.compile(r"\{\{(?:t|t\+|t-|\u043f\u0435\u0440\u0435\u0432)\|en\|([^}|]+)")
+_RU_IPA_RE = re.compile(r"(?:\u041c\u0424\u0410|IPA)[^\n\[]*\[([^\]]+)\]")
 
 
 def wiktionary_url(lemma: str) -> str:
     return f"https://en.wiktionary.org/wiki/{quote(lemma)}#Russian"
+
+
+def ru_wiktionary_url(lemma: str) -> str:
+    fragment = "%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9"
+    return f"https://ru.wiktionary.org/wiki/{quote(lemma)}#{fragment}"
 
 
 def _strip_wiki_markup(text: str) -> str:
@@ -59,12 +68,83 @@ def parse_wiktionary_wikitext(lemma: str, wikitext: str) -> WordInfo:
     )
 
 
+def _split_ru_translation_items(text: str) -> list[str]:
+    text = _strip_wiki_markup(text)
+    text = re.sub(r"\([^)]*\)", "", text)
+    text = re.sub(r"\b(?:m|f|n|c|\u0441\u0440|\u043c|\u0436)\.?\b", "", text)
+    text = re.sub(r"\b(?:in|the|a|an)\b.*$", "", text)
+    pieces = re.split(r"[,;]", text)
+    cleaned = []
+    for piece in pieces:
+        piece = re.sub(r"[^A-Za-z -]", "", piece).strip()
+        if piece and piece not in cleaned:
+            cleaned.append(piece)
+    return cleaned
+
+
+def parse_ru_wiktionary_wikitext(lemma: str, wikitext: str) -> WordInfo:
+    russian_match = re.search(
+        "^=\\s*(?:\u0420\u0443\u0441\u0441\u043a\u0438\u0439|\\{\\{-ru-\\}\\})\\s*=\\s*"
+        "(?P<body>.*?)(?=^=\\s*[^=\\n]+\\s*=|\\Z)",
+        wikitext,
+        re.MULTILINE | re.DOTALL,
+    )
+    body = russian_match.group("body") if russian_match else wikitext
+    ipa_match = _RU_IPA_RE.search(body)
+    ipa = ipa_match.group(1).strip() if ipa_match else ""
+
+    translations: list[str] = []
+    for match in _RU_EN_TEMPLATE_RE.finditer(body):
+        for item in _split_ru_translation_items(match.group(1)):
+            if item not in translations:
+                translations.append(item)
+        if len(translations) >= 8:
+            break
+
+    if len(translations) < 8:
+        for match in _RU_EN_TRANSLATION_RE.finditer(body):
+            for item in _split_ru_translation_items(match.group(1)):
+                if item not in translations:
+                    translations.append(item)
+            if len(translations) >= 8:
+                break
+
+    return WordInfo(
+        lemma=lemma,
+        ipa=ipa,
+        english="; ".join(translations[:8]),
+        source_url=ru_wiktionary_url(lemma),
+    )
+
+
 class WiktionaryClient:
     def lookup(self, lemma: str) -> WordInfo:
+        return self._lookup(
+            lemma=lemma,
+            api_url="https://en.wiktionary.org/w/api.php",
+            missing_url=wiktionary_url(lemma),
+            parser=parse_wiktionary_wikitext,
+        )
+
+    def lookup_ru(self, lemma: str) -> WordInfo:
+        return self._lookup(
+            lemma=lemma,
+            api_url="https://ru.wiktionary.org/w/api.php",
+            missing_url=ru_wiktionary_url(lemma),
+            parser=parse_ru_wiktionary_wikitext,
+        )
+
+    def _lookup(
+        self,
+        lemma: str,
+        api_url: str,
+        missing_url: str,
+        parser: Callable[[str, str], WordInfo],
+    ) -> WordInfo:
         import requests
 
         response = requests.get(
-            "https://en.wiktionary.org/w/api.php",
+            api_url,
             params={
                 "action": "query",
                 "format": "json",
@@ -81,6 +161,6 @@ class WiktionaryClient:
         response.raise_for_status()
         pages = response.json().get("query", {}).get("pages", [])
         if not pages or pages[0].get("missing"):
-            return WordInfo(lemma=lemma, ipa="", english="", source_url=wiktionary_url(lemma))
+            return WordInfo(lemma=lemma, ipa="", english="", source_url=missing_url)
         wikitext = pages[0]["revisions"][0]["slots"]["main"]["content"]
-        return parse_wiktionary_wikitext(lemma, wikitext)
+        return parser(lemma, wikitext)

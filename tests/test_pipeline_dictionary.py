@@ -67,6 +67,28 @@ class PipelineDictionaryTests(unittest.TestCase):
         self.assertEqual(info.english, "cinema; film")
         self.assertEqual(info.source_url, "wiktionary-kino")
 
+    def test_russian_wiktionary_fills_missing_english_wiktionary_meaning(self):
+        class FakeWiktionary:
+            def __init__(self):
+                self.lookups = []
+
+            def lookup(self, lemma):
+                self.lookups.append(("en", lemma))
+                return WordInfo(lemma=lemma, ipa="", english="", source_url="en-url")
+
+            def lookup_ru(self, lemma):
+                self.lookups.append(("ru", lemma))
+                return WordInfo(lemma=lemma, ipa="kadr", english="still; shot; frame", source_url="ru-url")
+
+        processor = VideoProcessor.__new__(VideoProcessor)
+        processor.wiktionary = FakeWiktionary()
+
+        info = processor._lookup_word("\u043a\u0430\u0434\u0440", "ru", [])
+
+        self.assertEqual(processor.wiktionary.lookups, [("en", "\u043a\u0430\u0434\u0440"), ("ru", "\u043a\u0430\u0434\u0440")])
+        self.assertEqual(info.english, "still; shot; frame")
+        self.assertEqual(info.source_url, "ru-url")
+
     def test_missing_dictionary_meaning_does_not_call_translator(self):
         class FakeWiktionary:
             def lookup(self, lemma):

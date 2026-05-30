@@ -169,20 +169,29 @@ class VideoProcessor:
     def _lookup_wiktionary_first(self, lemma: str, errors: list[str]) -> WordInfo:
         best = WordInfo(lemma=lemma, ipa="", english="", source_url="")
         for candidate in dictionary_lookup_candidates(lemma):
-            try:
-                info = self.wiktionary.lookup(candidate)
-            except Exception as exc:
-                errors.append(f"Wiktionary lookup failed for {candidate}: {exc}")
-                continue
-            if info.english:
-                return WordInfo(
-                    lemma=lemma,
-                    ipa=info.ipa,
-                    english=info.english,
-                    source_url=info.source_url,
-                )
-            if info.source_url and not best.source_url:
-                best = WordInfo(lemma=lemma, ipa=best.ipa, english="", source_url=info.source_url)
-            if info.ipa and not best.ipa:
-                best = WordInfo(lemma=lemma, ipa=info.ipa, english="", source_url=info.source_url or best.source_url)
+            for method_name, source_name in (("lookup", "English Wiktionary"), ("lookup_ru", "Russian Wiktionary")):
+                lookup = getattr(self.wiktionary, method_name, None)
+                if lookup is None:
+                    continue
+                try:
+                    info = lookup(candidate)
+                except Exception as exc:
+                    errors.append(f"{source_name} lookup failed for {candidate}: {exc}")
+                    continue
+                if info.english:
+                    return WordInfo(
+                        lemma=lemma,
+                        ipa=info.ipa,
+                        english=info.english,
+                        source_url=info.source_url,
+                    )
+                if info.source_url and not best.source_url:
+                    best = WordInfo(lemma=lemma, ipa=best.ipa, english="", source_url=info.source_url)
+                if info.ipa and not best.ipa:
+                    best = WordInfo(
+                        lemma=lemma,
+                        ipa=info.ipa,
+                        english="",
+                        source_url=info.source_url or best.source_url,
+                    )
         return best
