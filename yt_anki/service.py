@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .pipeline import VideoProcessor
+from .security import is_allowed_youtube_url
 from .settings import get_settings
 
 
@@ -30,6 +31,8 @@ def create_app() -> FastAPI:
 
     @app.post("/process")
     def process(request: ProcessRequest):
+        if not is_allowed_youtube_url(request.video_url):
+            raise HTTPException(status_code=400, detail="Only YouTube watch URLs are supported.")
         try:
             return processor.process(request.video_url, request.language).__dict__
         except Exception as exc:

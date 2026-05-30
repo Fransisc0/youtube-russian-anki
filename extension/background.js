@@ -6,18 +6,35 @@ const DEFAULT_CONFIG = {
 async function getConfig() {
   const stored = await chrome.storage.sync.get(DEFAULT_CONFIG);
   return {
-    serviceUrl: (stored.serviceUrl || DEFAULT_CONFIG.serviceUrl).replace(/\/+$/, ""),
+    serviceUrl: normalizeServiceUrl(stored.serviceUrl || DEFAULT_CONFIG.serviceUrl),
     language: stored.language || DEFAULT_CONFIG.language
   };
 }
 
 async function setConfig(config) {
   const next = {
-    serviceUrl: (config.serviceUrl || DEFAULT_CONFIG.serviceUrl).replace(/\/+$/, ""),
+    serviceUrl: normalizeServiceUrl(config.serviceUrl || DEFAULT_CONFIG.serviceUrl),
     language: config.language || DEFAULT_CONFIG.language
   };
   await chrome.storage.sync.set(next);
   return next;
+}
+
+function normalizeServiceUrl(value) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("Service URL must be a valid URL.");
+  }
+  const allowedHosts = new Set(["127.0.0.1", "localhost", "[::1]"]);
+  if (parsed.protocol !== "http:" || !allowedHosts.has(parsed.hostname)) {
+    throw new Error("Service URL must be local, for example http://127.0.0.1:8766.");
+  }
+  parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString().replace(/\/+$/, "");
 }
 
 async function postJson(url, body) {
