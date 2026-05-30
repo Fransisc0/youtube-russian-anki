@@ -11,7 +11,7 @@ if not exist ".venv\Scripts\python.exe" (
 
 if not exist ".env" (
   echo The .env file is missing.
-  echo Double-click install.bat first, then add your DeepL key.
+  echo Double-click install.bat first.
   pause
   exit /b 1
 )

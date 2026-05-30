@@ -60,11 +60,25 @@ if (!(Test-Path ".env")) {
     Write-Host "Created .env from .env.example."
 }
 
+$shortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "YouTube to Anki.lnk"
+$targetPath = Join-Path (Get-Location) "START_HERE.bat"
+try {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $targetPath
+    $shortcut.WorkingDirectory = (Get-Location).Path
+    $shortcut.Description = "Start YouTube Russian-to-Anki"
+    $shortcut.Save()
+    Write-Host "Created desktop shortcut: YouTube to Anki"
+} catch {
+    Write-Host "Could not create desktop shortcut. You can still use START_HERE.bat."
+}
+
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "1. Install AnkiConnect in Anki using add-on code 2055492159"
-Write-Host "2. Double-click start_service.bat"
-Write-Host "3. In Chrome, open chrome://extensions and load the extension folder"
+Write-Host "2. Double-click START_HERE.bat, or use the desktop shortcut"
+Write-Host "3. In Chrome, load the extension folder if it is not loaded yet"
 Write-Host ""
 Write-Host "No DeepL key is required by default. Argos Translate is used locally."
 

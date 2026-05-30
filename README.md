@@ -20,10 +20,12 @@ Local Chrome extension + Python service for turning captioned YouTube videos int
 
 ### Easy Windows Setup
 
-1. Double-click `install.bat`.
-2. Start Anki and make sure the AnkiConnect add-on is installed.
-3. Double-click `start_service.bat` and leave that window open.
-4. Load the Chrome extension from the `extension` folder.
+1. Double-click `START_HERE.bat`.
+2. In Chrome, turn on Developer Mode, click "Load unpacked", and paste the copied extension folder path.
+3. Start Anki and make sure the AnkiConnect add-on is installed.
+4. Leave the service window open while using YouTube.
+
+`START_HERE.bat` installs the app if needed, creates a desktop shortcut, copies the extension folder path to your clipboard, opens `chrome://extensions`, and starts the local service.
 
 No translation API key is required by default. The first translation run may download an Argos Russian-to-English model.
 
@@ -31,7 +33,7 @@ Optional: if you want DeepL later, open `.env`, set `TRANSLATION_PROVIDER=deepl`
 
 The installer creates a local `.venv`, installs Python dependencies, and uses Python-installed `yt-dlp` plus bundled `ffmpeg` support. You should not need to manually install `yt-dlp` or `ffmpeg`.
 
-Chrome itself cannot be installed silently by this project, and Chrome does not allow an unpacked extension to be loaded silently. The one-time Chrome step is still manual.
+Chrome itself cannot be installed silently by this project, and Chrome does not allow an unpacked extension to be loaded silently. The one-time Chrome "Load unpacked" step is still manual.
 
 ### Manual Setup
 
