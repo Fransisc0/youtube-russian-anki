@@ -8,7 +8,7 @@ Local Chrome extension + Python service for turning captioned YouTube videos int
 
 - Adds a button to YouTube watch pages.
 - Sends the current video URL to a local FastAPI service.
-- Downloads Russian captions and audio with `yt-dlp`.
+- Downloads captions and audio with `yt-dlp`.
 - Splits captions into timestamped sentences.
 - Clips sentence audio with `ffmpeg`.
 - Finds new Russian lemmas using a local SQLite learner database.
@@ -44,13 +44,26 @@ Local Chrome extension + Python service for turning captioned YouTube videos int
    - Enable Developer Mode
    - Click "Load unpacked"
    - Select this repo's `extension` folder
+7. Click the extension icon and press "Check" to confirm it can reach the local service.
 
 ## Usage
 
-1. Open a YouTube video with Russian captions.
-2. Click the "Anki" button injected near the YouTube action bar.
-3. Watch service logs for progress.
-4. Review the created deck in Anki.
+1. Open a YouTube video with captions in your learner language.
+2. Select the transcript language next to the injected "Anki" button if needed.
+3. Click the "Anki" button injected near the YouTube action bar.
+4. Watch the on-page status and service logs for progress.
+5. Review the created deck in Anki.
+
+## Chrome Extension
+
+The unpacked extension lives in `extension/`.
+
+- `manifest.json` defines the Manifest V3 extension.
+- `content.js` injects the YouTube page button, language selector, and status pill.
+- `background.js` talks to the local service.
+- `popup.html` lets you configure the service URL and default transcript language.
+
+The service defaults to `http://127.0.0.1:8766`. AnkiConnect should remain on its usual `http://127.0.0.1:8765`.
 
 ## Card Shape
 
@@ -65,7 +78,7 @@ Back:
 - Word glosses, one per line:
 
 ```text
-говорить (говорить, /ɡəvɐˈrʲitʲ/) - to speak
+govorit (govorit, /govorit/) - to speak
 ```
 
 ## Notes
