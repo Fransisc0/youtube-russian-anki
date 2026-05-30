@@ -37,6 +37,12 @@ The installer creates a local `.venv`, installs Python dependencies, and uses Py
 
 Chrome itself cannot be installed silently by this project, and Chrome does not allow an unpacked extension to be loaded silently. The one-time Chrome "Load unpacked" step is still manual.
 
+### Updating
+
+For future updates, double-click `UPDATE_AND_RESTART.bat` or the desktop shortcut named `Update YouTube to Anki`. It pulls the latest files, updates dependencies, and restarts the local service.
+
+If the Chrome extension files changed, click the extension icon and press `Reload Extension`, then refresh the YouTube page. Chrome does not let unpacked extensions reload themselves silently from disk, so this one click is the browser-safe replacement for visiting `chrome://extensions`.
+
 ### Manual Setup
 
 1. Install runtime tools:

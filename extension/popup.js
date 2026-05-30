@@ -53,6 +53,12 @@ async function checkService() {
   setStatus("Service is reachable");
 }
 
+function reloadExtension() {
+  setStatus("Reloading extension...");
+  chrome.runtime.reload();
+}
+
 document.getElementById("save").addEventListener("click", saveConfig);
 document.getElementById("check").addEventListener("click", checkService);
+document.getElementById("reload-extension").addEventListener("click", reloadExtension);
 loadConfig();

@@ -90,6 +90,20 @@ try {
     Write-Host "Could not create desktop shortcut. You can still use START_HERE.bat."
 }
 
+$updateShortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update YouTube to Anki.lnk"
+$updateTargetPath = Join-Path (Get-Location) "UPDATE_AND_RESTART.bat"
+try {
+    $shell = New-Object -ComObject WScript.Shell
+    $updateShortcut = $shell.CreateShortcut($updateShortcutPath)
+    $updateShortcut.TargetPath = $updateTargetPath
+    $updateShortcut.WorkingDirectory = (Get-Location).Path
+    $updateShortcut.Description = "Update and restart YouTube Russian-to-Anki"
+    $updateShortcut.Save()
+    Write-Host "Created desktop shortcut: Update YouTube to Anki"
+} catch {
+    Write-Host "Could not create update shortcut. You can still use UPDATE_AND_RESTART.bat."
+}
+
 $startupShortcutPath = Join-Path ([Environment]::GetFolderPath("Startup")) "YouTube to Anki Service.lnk"
 $serviceTargetPath = Join-Path (Get-Location) "start_service.bat"
 try {
