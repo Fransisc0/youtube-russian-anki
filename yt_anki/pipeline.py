@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .anki import AnkiCard, AnkiConnectClient
+from .core_words import lookup_core_word
 from .db import LearnerDb
 from .ipa import approximate_russian_ipa
 from .language import RussianLemmatizer, unique_lemmas
@@ -119,7 +120,7 @@ class VideoProcessor:
                     self.settings.media_dir / "downloads" / f"{assets.video_id}_{index:04d}.mp3",
                 )
             except Exception as exc:  # keep card creation going without audio
-                errors.append(f"Audio clip failed for sentence {index}: {exc}")
+                raise RuntimeError(f"Audio clip failed for sentence {index}: {exc}") from exc
 
             card = AnkiCard(
                 russian_sentence=sentence.text,
@@ -146,6 +147,9 @@ class VideoProcessor:
         )
 
     def _lookup_word(self, lemma: str, language: str, errors: list[str]) -> WordInfo:
+        core_info = lookup_core_word(lemma)
+        if core_info:
+            return core_info
         try:
             info = self.wiktionary.lookup(lemma)
         except Exception as exc:

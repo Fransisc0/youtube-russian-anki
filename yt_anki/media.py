@@ -129,6 +129,8 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
 
 def clip_audio(source: Path, start: float, end: float, target: Path) -> Path:
     ffmpeg = ffmpeg_command()
+    if not source.exists():
+        raise RuntimeError(f"Source audio file does not exist: {source}")
     target.parent.mkdir(parents=True, exist_ok=True)
     duration = max(0.25, end - start)
     _run(
@@ -141,10 +143,13 @@ def clip_audio(source: Path, start: float, end: float, target: Path) -> Path:
             f"{duration:.3f}",
             "-i",
             str(source),
+            "-vn",
             "-acodec",
             "libmp3lame",
             str(target),
         ],
         target.parent,
     )
+    if not target.exists() or target.stat().st_size == 0:
+        raise RuntimeError(f"ffmpeg did not create a usable audio clip: {target}")
     return target
