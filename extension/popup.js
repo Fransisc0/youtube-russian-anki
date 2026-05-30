@@ -1,8 +1,12 @@
 function sendMessage(message) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      resolve(response || { ok: false, error: chrome.runtime.lastError?.message || "No response" });
-    });
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        resolve(response || { ok: false, error: chrome.runtime.lastError?.message || "No response" });
+      });
+    } catch (error) {
+      resolve({ ok: false, error: error.message || "Extension was reloaded. Reopen this popup." });
+    }
   });
 }
 
@@ -54,8 +58,11 @@ async function checkService() {
 }
 
 function reloadExtension() {
-  setStatus("Reloading extension...");
-  chrome.runtime.reload();
+  setStatus("Reloading. Refresh YouTube after this popup closes.");
+  setTimeout(() => {
+    chrome.runtime.reload();
+    window.close();
+  }, 250);
 }
 
 document.getElementById("save").addEventListener("click", saveConfig);

@@ -13,9 +13,16 @@ const LANGUAGES = [
 
 function sendMessage(message) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      resolve(response || { ok: false, error: chrome.runtime.lastError?.message || "No response" });
-    });
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        resolve(response || { ok: false, error: chrome.runtime.lastError?.message || "No response" });
+      });
+    } catch (error) {
+      resolve({
+        ok: false,
+        error: "Extension was reloaded. Refresh this YouTube page."
+      });
+    }
   });
 }
 
@@ -239,6 +246,8 @@ function injectButton() {
       if (select) {
         select.value = response.payload.language;
       }
+    } else if (response?.error) {
+      setStatus(response.error, "error");
     }
   });
 }
