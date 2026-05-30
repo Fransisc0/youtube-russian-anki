@@ -1,4 +1,5 @@
 const BUTTON_ID = "yt-anki-create-button";
+const REPAIR_BUTTON_ID = "yt-anki-repair-button";
 const SELECT_ID = "yt-anki-language-select";
 const STATUS_ID = "yt-anki-status-pill";
 const LANGUAGES = [
@@ -93,28 +94,32 @@ function makeStatus() {
   return status;
 }
 
-function makeButton() {
-  const button = document.createElement("button");
-  button.id = BUTTON_ID;
-  button.type = "button";
-  button.textContent = "Anki";
-  button.title = "Create Anki cards from this video's Russian transcript";
-  button.style.cssText = [
+function baseButtonStyle(background, color = "white") {
+  return [
     "height: 36px",
     "padding: 0 14px",
     "border: 1px solid rgba(0,0,0,.15)",
     "border-radius: 18px",
-    "background: #0b57d0",
-    "color: white",
+    `background: ${background}`,
+    `color: ${color}`,
     "font: 500 14px Arial, sans-serif",
     "cursor: pointer",
     "margin-left: 8px"
   ].join(";");
+}
+
+function makeProcessButton({ id, label, title, repair, background, color }) {
+  const button = document.createElement("button");
+  button.id = id;
+  button.type = "button";
+  button.textContent = label;
+  button.title = title;
+  button.style.cssText = baseButtonStyle(background, color);
 
   button.addEventListener("click", async () => {
     button.disabled = true;
-    button.textContent = "Working...";
-    setStatus("Processing", "work");
+    button.textContent = repair ? "Repairing..." : "Working...";
+    setStatus(repair ? "Repairing" : "Processing", "work");
     let videoUrl;
     try {
       videoUrl = currentVideoUrl();
@@ -128,7 +133,8 @@ function makeButton() {
     const response = await sendMessage({
       type: "YT_ANKI_PROCESS",
       videoUrl,
-      language: selectedLanguage()
+      language: selectedLanguage(),
+      repair
     });
     button.disabled = false;
     if (!response?.ok) {
@@ -136,21 +142,46 @@ function makeButton() {
       button.title = response?.error || "Could not create cards";
       setStatus(response?.error || "Failed", "error");
       setTimeout(() => {
-        button.textContent = "Anki";
+        button.textContent = label;
       }, 4000);
       return;
     }
     const count = response.payload.cards_created;
-    button.textContent = `Added ${count}`;
-    button.title = `Created ${count} cards`;
-    setStatus(`Added ${count}`, "ok");
+    const deleted = response.payload.cards_deleted || 0;
+    button.textContent = repair ? `Fixed ${count}` : `Added ${count}`;
+    button.title = repair
+      ? `Deleted ${deleted} old cards and created ${count} cards`
+      : `Created ${count} cards`;
+    setStatus(repair ? `Fixed ${count}` : `Added ${count}`, "ok");
     setTimeout(() => {
-      button.textContent = "Anki";
+      button.textContent = label;
       setStatus("Ready", "idle");
     }, 5000);
   });
 
   return button;
+}
+
+function makeButton() {
+  return makeProcessButton({
+    id: BUTTON_ID,
+    label: "Anki",
+    title: "Create Anki cards from this video's transcript",
+    repair: false,
+    background: "#0b57d0",
+    color: "white"
+  });
+}
+
+function makeRepairButton() {
+  return makeProcessButton({
+    id: REPAIR_BUTTON_ID,
+    label: "Repair",
+    title: "Delete and recreate this video's Anki cards, ignoring the seen-word database",
+    repair: true,
+    background: "#fbbc04",
+    color: "#202124"
+  });
 }
 
 function injectButton() {
@@ -163,6 +194,7 @@ function injectButton() {
   }
   actions.prepend(makeStatus());
   actions.prepend(makeLanguageSelect());
+  actions.prepend(makeRepairButton());
   actions.prepend(makeButton());
   sendMessage({ type: "YT_ANKI_GET_CONFIG" }).then((response) => {
     if (response?.ok && response.payload?.language) {

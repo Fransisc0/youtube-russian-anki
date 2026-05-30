@@ -18,6 +18,7 @@ class ProcessResult:
     video_title: str
     cards_created: int
     sentences_seen: int
+    cards_deleted: int
     errors: list[str]
 
 
@@ -35,7 +36,7 @@ def format_gloss(lemma: str, info: WordInfo) -> str:
     ipa = info.ipa
     if ipa and not (ipa.startswith("/") and ipa.endswith("/")):
         ipa = f"/{ipa}/"
-    ipa_part = f", {ipa}" if ipa else ""
+    ipa_part = f", {ipa}" if ipa else ", IPA unavailable"
     english = info.english or "unavailable"
     return f"{lemma} ({lemma}{ipa_part}) - {english}"
 
@@ -49,7 +50,12 @@ class VideoProcessor:
         self.translator = create_translator(settings)
         self.anki = AnkiConnectClient(settings.anki_connect_url)
 
-    def process(self, video_url: str, language: str | None = None) -> ProcessResult:
+    def process(
+        self,
+        video_url: str,
+        language: str | None = None,
+        repair: bool = False,
+    ) -> ProcessResult:
         language = language or self.settings.learner_language
 
         self.settings.media_dir.mkdir(parents=True, exist_ok=True)
@@ -61,17 +67,27 @@ class VideoProcessor:
 
         self.anki.ensure_deck(self.settings.anki_deck_name)
         self.anki.ensure_model(self.settings.anki_model_name)
+        cards_deleted = 0
+        if repair:
+            cards_deleted = self.anki.delete_cards_for_video(
+                self.settings.anki_deck_name,
+                self.settings.anki_model_name,
+                video_url,
+            )
 
         cards_created = 0
         errors: list[str] = []
 
         for index, sentence in enumerate(sentences, start=1):
             lemma_surfaces = unique_lemmas(self.lemmatizer.extract(sentence.text))
-            new_lemmas = self.db.filter_new_lemmas(list(lemma_surfaces), language)
+            if repair:
+                new_lemmas = list(lemma_surfaces)
+            else:
+                new_lemmas = self.db.filter_new_lemmas(list(lemma_surfaces), language)
             if not new_lemmas:
                 continue
 
-            word_infos = [self._lookup_word(lemma, errors) for lemma in new_lemmas]
+            word_infos = [self._lookup_word(lemma, language, errors) for lemma in new_lemmas]
             glosses = "\n".join(format_gloss(lemma, info) for lemma, info in zip(new_lemmas, word_infos))
             translation = self.translator.translate(
                 TranslationRequest(
@@ -110,12 +126,31 @@ class VideoProcessor:
             video_title=assets.video_title,
             cards_created=cards_created,
             sentences_seen=len(sentences),
+            cards_deleted=cards_deleted,
             errors=errors,
         )
 
-    def _lookup_word(self, lemma: str, errors: list[str]) -> WordInfo:
+    def _lookup_word(self, lemma: str, language: str, errors: list[str]) -> WordInfo:
         try:
-            return self.wiktionary.lookup(lemma)
+            info = self.wiktionary.lookup(lemma)
         except Exception as exc:
             errors.append(f"Wiktionary lookup failed for {lemma}: {exc}")
-            return WordInfo(lemma=lemma, ipa="", english="", source_url="")
+            info = WordInfo(lemma=lemma, ipa="", english="", source_url="")
+        if not info.english:
+            try:
+                english = self.translator.translate(
+                    TranslationRequest(
+                        text=lemma,
+                        source_lang=language,
+                        target_lang=self.settings.target_language,
+                    )
+                )
+                info = WordInfo(
+                    lemma=info.lemma,
+                    ipa=info.ipa,
+                    english=english,
+                    source_url=info.source_url,
+                )
+            except Exception as exc:
+                errors.append(f"Word translation failed for {lemma}: {exc}")
+        return info

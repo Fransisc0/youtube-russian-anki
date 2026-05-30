@@ -71,6 +71,8 @@ Chrome itself cannot be installed silently by this project, and Chrome does not 
 4. Watch the on-page status and service logs for progress.
 5. Review the created deck in Anki.
 
+If cards for a video were created incorrectly, click the injected "Repair" button on that same YouTube video page. Repair deletes this video's old generated notes, ignores the seen-word database for that run, rebuilds the sentence audio clips, and recreates the cards.
+
 ## Chrome Extension
 
 The unpacked extension lives in `extension/`.
@@ -94,6 +96,7 @@ Front:
 Back:
 
 - English sentence translation
+- Sentence audio replay button
 - Word glosses, one per line:
 
 ```text
@@ -103,7 +106,8 @@ govorit (govorit, /govorit/) - to speak
 ## Notes
 
 - V1 stops if no usable transcript exists. It does not run Whisper.
-- IPA is only taken from Wiktionary. Missing IPA is left blank.
+- IPA is taken from Wiktionary when available. Missing IPA is shown as `IPA unavailable`.
+- Word meanings are taken from Wiktionary when available, with a fallback word translation from the configured sentence translator.
 - Sentence translation uses Argos Translate by default. Set `TRANSLATION_PROVIDER=deepl` only if you want to use a DeepL API key.
 - The first time a lemma is encountered, the sentence can become a card. Seen lemmas are tracked in `data/learner.sqlite3`.
 - The local service defaults to port `8766` so it does not conflict with AnkiConnect on `8765`.

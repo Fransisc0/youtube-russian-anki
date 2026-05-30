@@ -17,13 +17,14 @@ class AnkiCard:
 
 FRONT_TEMPLATE = """
 <div class="sentence">{{RussianSentence}}</div>
-<div class="audio">{{SentenceAudio}}</div>
+<div class="audio audio-front">{{SentenceAudio}}</div>
 """
 
 BACK_TEMPLATE = """
 {{FrontSide}}
 <hr id="answer">
 <div class="translation">{{EnglishTranslation}}</div>
+<div class="audio audio-back">{{SentenceAudio}}</div>
 <div class="glosses">{{WordGlosses}}</div>
 """
 
@@ -37,6 +38,9 @@ CSS = """
   background: #fff;
 }
 .sentence { margin-bottom: 18px; }
+.audio { margin: 16px 0; }
+.audio-front { font-size: 20px; }
+.audio-back { font-size: 18px; }
 .translation { margin-top: 18px; font-size: 24px; }
 .glosses { margin-top: 18px; font-size: 20px; white-space: pre-line; }
 """
@@ -66,6 +70,7 @@ class AnkiConnectClient:
     def ensure_model(self, model_name: str) -> None:
         names = self.invoke("modelNames")
         if model_name in names:
+            self.update_model(model_name)
             return
         self.invoke(
             "createModel",
@@ -88,6 +93,28 @@ class AnkiConnectClient:
                 }
             ],
         )
+
+    def update_model(self, model_name: str) -> None:
+        self.invoke(
+            "updateModelTemplates",
+            model={
+                "name": model_name,
+                "templates": {
+                    "Sentence Translation": {
+                        "Front": FRONT_TEMPLATE,
+                        "Back": BACK_TEMPLATE,
+                    }
+                },
+            },
+        )
+        self.invoke("updateModelStyling", model={"name": model_name, "css": CSS})
+
+    def delete_cards_for_video(self, deck_name: str, model_name: str, video_url: str) -> int:
+        query = f'deck:"{deck_name}" note:"{model_name}" "VideoUrl:{video_url}"'
+        note_ids = self.invoke("findNotes", query=query)
+        if note_ids:
+            self.invoke("deleteNotes", notes=note_ids)
+        return len(note_ids or [])
 
     def add_card(self, deck_name: str, model_name: str, card: AnkiCard) -> int:
         fields = {

@@ -38,6 +38,18 @@ def ffmpeg_command() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
+def node_command() -> str | None:
+    return shutil.which("node")
+
+
+def yt_dlp_environment_args(ffmpeg: str) -> list[str]:
+    args = ["--ffmpeg-location", ffmpeg]
+    node = node_command()
+    if node:
+        args.extend(["--js-runtimes", f"node:{node}"])
+    return args
+
+
 def _run(args: list[str], cwd: Path) -> None:
     completed = subprocess.run(args, cwd=cwd, text=True, capture_output=True, check=False)
     if completed.returncode != 0:
@@ -49,11 +61,12 @@ def _run(args: list[str], cwd: Path) -> None:
 def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> VideoAssets:
     yt_dlp = yt_dlp_command()
     ffmpeg = ffmpeg_command()
+    env_args = yt_dlp_environment_args(ffmpeg)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     info = json.loads(
         subprocess.check_output(
-            [*yt_dlp, "--skip-download", "--dump-single-json", video_url],
+            [*yt_dlp, *env_args, "--skip-download", "--dump-single-json", video_url],
             text=True,
         )
     )
@@ -67,6 +80,7 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
     _run(
         [
             *yt_dlp,
+            *env_args,
             "--write-sub",
             "--write-auto-sub",
             "--sub-langs",
@@ -94,13 +108,12 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
     _run(
         [
             *yt_dlp,
+            *env_args,
             "-f",
             "bestaudio",
             "-x",
             "--audio-format",
             "mp3",
-            "--ffmpeg-location",
-            ffmpeg,
             "-o",
             output_template,
             video_url,

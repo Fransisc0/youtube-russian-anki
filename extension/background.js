@@ -85,7 +85,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "YT_ANKI_PROCESS") {
       const payload = await postJson(`${config.serviceUrl}/process`, {
         video_url: message.videoUrl,
-        language: message.language || config.language
+        language: message.language || config.language,
+        repair: Boolean(message.repair)
       });
       sendResponse({ ok: true, payload });
       return;

@@ -12,6 +12,7 @@ from .settings import get_settings
 class ProcessRequest(BaseModel):
     video_url: str
     language: str | None = None
+    repair: bool = False
 
 
 def create_app() -> FastAPI:
@@ -34,7 +35,7 @@ def create_app() -> FastAPI:
         if not is_allowed_youtube_url(request.video_url):
             raise HTTPException(status_code=400, detail="Only YouTube watch URLs are supported.")
         try:
-            return processor.process(request.video_url, request.language).__dict__
+            return processor.process(request.video_url, request.language, repair=request.repair).__dict__
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

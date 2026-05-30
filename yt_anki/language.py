@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 
 
-_CYRILLIC_WORD_RE = re.compile(r"[А-Яа-яЁё]+(?:-[А-Яа-яЁё]+)?")
+_CYRILLIC_WORD_RE = re.compile(r"[\u0400-\u04ff]+(?:-[\u0400-\u04ff]+)?")
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class RussianLemmatizer:
         items: list[TokenLemma] = []
         for match in _CYRILLIC_WORD_RE.finditer(text):
             surface = match.group(0)
-            lower = surface.lower().replace("ё", "е")
+            lower = surface.lower().replace("\u0451", "\u0435")
             if self._morph:
                 parsed = self._morph.parse(lower)
                 lemma = parsed[0].normal_form if parsed else lower
