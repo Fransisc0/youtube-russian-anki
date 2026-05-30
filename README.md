@@ -27,6 +27,8 @@ Local Chrome extension + Python service for turning captioned YouTube videos int
 
 `START_HERE.bat` installs the app if needed, creates a desktop shortcut, copies the extension folder path to your clipboard, opens `chrome://extensions`, and starts the local service.
 
+The installer also creates a Windows startup shortcut named `YouTube to Anki Service`. After setup, the local service starts automatically when you sign in to Windows. In normal use, you should only need to refresh the YouTube page if the button does not appear.
+
 No translation API key is required by default. The first translation run may download an Argos Russian-to-English model.
 
 Optional: if you want DeepL later, open `.env`, set `TRANSLATION_PROVIDER=deepl`, and paste your DeepL key after `DEEPL_AUTH_KEY=`.

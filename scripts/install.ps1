@@ -83,11 +83,27 @@ try {
     Write-Host "Could not create desktop shortcut. You can still use START_HERE.bat."
 }
 
+$startupShortcutPath = Join-Path ([Environment]::GetFolderPath("Startup")) "YouTube to Anki Service.lnk"
+$serviceTargetPath = Join-Path (Get-Location) "start_service.bat"
+try {
+    $shell = New-Object -ComObject WScript.Shell
+    $startupShortcut = $shell.CreateShortcut($startupShortcutPath)
+    $startupShortcut.TargetPath = $serviceTargetPath
+    $startupShortcut.WorkingDirectory = (Get-Location).Path
+    $startupShortcut.Description = "Run YouTube-to-Anki local service at sign-in"
+    $startupShortcut.WindowStyle = 7
+    $startupShortcut.Save()
+    Write-Host "Created startup shortcut: YouTube to Anki Service"
+} catch {
+    Write-Host "Could not create startup shortcut. You can still use start_service.bat."
+}
+
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "1. Install AnkiConnect in Anki using add-on code 2055492159"
 Write-Host "2. Double-click START_HERE.bat, or use the desktop shortcut"
 Write-Host "3. In Chrome, load the extension folder if it is not loaded yet"
+Write-Host "4. After this, the local service will auto-start when you sign in to Windows"
 Write-Host ""
 Write-Host "No DeepL key is required by default. Argos Translate is used locally."
 
