@@ -129,6 +129,8 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
 
 def clip_audio(source: Path, start: float, end: float, target: Path) -> Path:
     ffmpeg = ffmpeg_command()
+    source = source.resolve()
+    target = target.resolve()
     if not source.exists():
         raise RuntimeError(f"Source audio file does not exist: {source}")
     target.parent.mkdir(parents=True, exist_ok=True)

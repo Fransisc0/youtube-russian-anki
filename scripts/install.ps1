@@ -48,9 +48,16 @@ if ($null -eq $python) {
 Write-Host "Creating local Python environment..."
 $venvPython = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 if (Test-Path $venvPython) {
+    $recreateVenv = $false
     try {
         & $venvPython -c "import sys; print(sys.version)" | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            $recreateVenv = $true
+        }
     } catch {
+        $recreateVenv = $true
+    }
+    if ($recreateVenv) {
         Write-Host "Existing .venv is broken; recreating it..."
         Remove-Item -Recurse -Force ".venv"
     }
