@@ -41,7 +41,8 @@ def format_gloss(lemma: str, info: WordInfo) -> str:
         ipa = f"/{ipa}/"
     ipa_part = f", {ipa}" if ipa else ", IPA unavailable"
     english = info.english or "dictionary meaning unavailable"
-    return f"{lemma} ({lemma}{ipa_part}) - {english}"
+    stressed = info.stressed or lemma
+    return f"{lemma} ({stressed}{ipa_part}) - {english}"
 
 
 class VideoProcessor:
@@ -156,6 +157,7 @@ class VideoProcessor:
                     ipa=info.ipa or core_info.ipa,
                     english=core_info.english,
                     source_url=info.source_url or core_info.source_url,
+                    stressed=info.stressed or core_info.stressed,
                 )
         if not info.ipa:
             info = WordInfo(
@@ -163,6 +165,7 @@ class VideoProcessor:
                 ipa=approximate_russian_ipa(lemma),
                 english=info.english,
                 source_url=info.source_url,
+                stressed=info.stressed,
             )
         return info
 
@@ -184,14 +187,30 @@ class VideoProcessor:
                         ipa=info.ipa,
                         english=info.english,
                         source_url=info.source_url,
+                        stressed=info.stressed,
                     )
                 if info.source_url and not best.source_url:
-                    best = WordInfo(lemma=lemma, ipa=best.ipa, english="", source_url=info.source_url)
+                    best = WordInfo(
+                        lemma=lemma,
+                        ipa=best.ipa,
+                        english="",
+                        source_url=info.source_url,
+                        stressed=best.stressed,
+                    )
                 if info.ipa and not best.ipa:
                     best = WordInfo(
                         lemma=lemma,
                         ipa=info.ipa,
                         english="",
                         source_url=info.source_url or best.source_url,
+                        stressed=info.stressed or best.stressed,
+                    )
+                if info.stressed and not best.stressed:
+                    best = WordInfo(
+                        lemma=lemma,
+                        ipa=best.ipa,
+                        english="",
+                        source_url=best.source_url or info.source_url,
+                        stressed=info.stressed,
                     )
         return best

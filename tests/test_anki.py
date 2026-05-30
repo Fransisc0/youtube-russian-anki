@@ -20,10 +20,10 @@ class AnkiPayloadTests(unittest.TestCase):
         self.assertEqual(card.russian_sentence, "\u042f \u0433\u043e\u0432\u043e\u0440\u044e.")
 
     def test_format_gloss(self):
-        info = WordInfo("\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c", "\u0261\u0259v\u0250\u02c8r\u02b2it\u02b2", "to speak", "url")
+        info = WordInfo("\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c", "\u0261\u0259v\u0250\u02c8r\u02b2it\u02b2", "to speak", "url", "\u0433\u043e\u0432\u043e\u0440\u0438\u0301\u0442\u044c")
         self.assertEqual(
             format_gloss("\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c", info),
-            "\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c (\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c, /\u0261\u0259v\u0250\u02c8r\u02b2it\u02b2/) - to speak",
+            "\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c (\u0433\u043e\u0432\u043e\u0440\u0438\u0301\u0442\u044c, /\u0261\u0259v\u0250\u02c8r\u02b2it\u02b2/) - to speak",
         )
 
     def test_format_gloss_marks_missing_ipa(self):

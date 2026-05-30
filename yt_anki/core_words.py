@@ -62,4 +62,4 @@ def lookup_core_word(lemma: str) -> WordInfo | None:
     if not match:
         return None
     ipa, english = match
-    return WordInfo(lemma=lemma, ipa=ipa, english=english, source_url="built-in")
+    return WordInfo(lemma=lemma, ipa=ipa, english=english, source_url="built-in", stressed=lemma)

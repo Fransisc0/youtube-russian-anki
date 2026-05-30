@@ -1,6 +1,12 @@
 import unittest
 
-from yt_anki.wiktionary import parse_ru_wiktionary_wikitext, parse_wiktionary_wikitext, ru_wiktionary_url, wiktionary_url
+from yt_anki.wiktionary import (
+    parse_rest_definition_json,
+    parse_ru_wiktionary_wikitext,
+    parse_wiktionary_wikitext,
+    ru_wiktionary_url,
+    wiktionary_url,
+)
 
 
 class WiktionaryTests(unittest.TestCase):
@@ -9,11 +15,13 @@ class WiktionaryTests(unittest.TestCase):
 ===Pronunciation===
 * {{IPA|ru|\u0261\u0259v\u0250\u02c8r\u02b2it\u02b2}}
 ===Verb===
+\u0433\u043e\u0432\u043e\u0440\u0438\u0301\u0442\u044c
 # to speak, to talk
 # to say
 """
         info = parse_wiktionary_wikitext("\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c", text)
         self.assertEqual(info.ipa, "\u0261\u0259v\u0250\u02c8r\u02b2it\u02b2")
+        self.assertEqual(info.stressed, "\u0433\u043e\u0432\u043e\u0440\u0438\u0301\u0442\u044c")
         self.assertIn("to speak", info.english)
 
     def test_parse_multiple_dictionary_glosses(self):
@@ -40,6 +48,7 @@ class WiktionaryTests(unittest.TestCase):
     def test_parse_russian_wiktionary_english_translations(self):
         text = """= \u0420\u0443\u0441\u0441\u043a\u0438\u0439 =
 == \u043a\u0430\u0434\u0440 I ==
+\u043a\u0430\u0301\u0434\u0440
 === \u041f\u0440\u043e\u0438\u0437\u043d\u043e\u0448\u0435\u043d\u0438\u0435 ===
 * \u041c\u0424\u0410: [kadr]
 === \u0421\u0435\u043c\u0430\u043d\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0432\u043e\u0439\u0441\u0442\u0432\u0430 ===
@@ -53,10 +62,53 @@ class WiktionaryTests(unittest.TestCase):
 """
         info = parse_ru_wiktionary_wikitext("\u043a\u0430\u0434\u0440", text)
         self.assertEqual(info.ipa, "kadr")
+        self.assertEqual(info.stressed, "\u043a\u0430\u0301\u0434\u0440")
         self.assertIn("still", info.english)
         self.assertIn("shot", info.english)
         self.assertIn("frame", info.english)
         self.assertIn("packet", info.english)
+
+    def test_parse_rest_definition_json_for_russian_entry(self):
+        data = {
+            "ru": [
+                {
+                    "partOfSpeech": "Noun",
+                    "language": "Russian",
+                    "definitions": [
+                        {"definition": '<a href="/wiki/work">work</a>'},
+                        {
+                            "definition": '<a href="/wiki/labor">labor</a>, '
+                            '<a href="/wiki/toil">toil</a>'
+                        },
+                        {
+                            "definition": '<a href="/wiki/job">job</a>, '
+                            '<a href="/wiki/occupation">occupation</a>'
+                        },
+                    ],
+                }
+            ]
+        }
+
+        info = parse_rest_definition_json("\u0440\u0430\u0431\u043e\u0442\u0430", data)
+
+        self.assertIn("work", info.english)
+        self.assertIn("labor, toil", info.english)
+        self.assertIn("job, occupation", info.english)
+
+    def test_parse_rest_definition_ignores_non_russian_entries(self):
+        data = {
+            "bg": [
+                {
+                    "partOfSpeech": "Noun",
+                    "language": "Bulgarian",
+                    "definitions": [{"definition": '<a href="/wiki/work">work</a>'}],
+                }
+            ]
+        }
+
+        info = parse_rest_definition_json("\u0440\u0430\u0431\u043e\u0442\u0430", data)
+
+        self.assertEqual(info.english, "")
 
     def test_ru_url(self):
         self.assertEqual(
