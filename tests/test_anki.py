@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from yt_anki.anki import AnkiCard, AnkiConnectClient, BACK_TEMPLATE
+from yt_anki.anki import AnkiCard, AnkiConnectClient, BACK_TEMPLATE, FRONT_TEMPLATE
 from yt_anki.pipeline import format_gloss, format_timestamp
 from yt_anki.wiktionary import WordInfo
 
@@ -30,10 +30,17 @@ class AnkiPayloadTests(unittest.TestCase):
         info = WordInfo("\u0434\u0435\u043d\u044c", "", "day", "url")
         self.assertEqual(format_gloss("\u0434\u0435\u043d\u044c", info), "\u0434\u0435\u043d\u044c (\u0434\u0435\u043d\u044c, IPA unavailable) - day")
 
-    def test_back_template_includes_audio_replay(self):
-        self.assertIn("{{SentenceAudio}}", BACK_TEMPLATE)
+    def test_front_prompts_with_english(self):
+        self.assertIn("{{EnglishTranslation}}", FRONT_TEMPLATE)
+        self.assertNotIn("{{RussianSentence}}", FRONT_TEMPLATE)
+        self.assertNotIn("{{SentenceAudio}}", FRONT_TEMPLATE)
 
-    def test_add_card_sets_sound_field(self):
+    def test_back_template_includes_russian_and_one_audio(self):
+        self.assertIn("{{RussianSentence}}", BACK_TEMPLATE)
+        self.assertIn("{{SentenceAudio}}", BACK_TEMPLATE)
+        self.assertEqual(BACK_TEMPLATE.count("{{SentenceAudio}}"), 1)
+
+    def test_add_card_lets_ankiconnect_populate_sound_field_once(self):
         calls = []
 
         class FakeClient(AnkiConnectClient):
@@ -52,7 +59,8 @@ class AnkiPayloadTests(unittest.TestCase):
         )
         FakeClient("unused").add_card("deck", "model", card)
         note = calls[0][1]["note"]
-        self.assertEqual(note["fields"]["SentenceAudio"], "[sound:clip.mp3]")
+        self.assertEqual(note["fields"]["SentenceAudio"], "")
+        self.assertEqual(note["audio"][0]["fields"], ["SentenceAudio"])
 
     def test_format_timestamp(self):
         self.assertEqual(format_timestamp(65), "1:05")

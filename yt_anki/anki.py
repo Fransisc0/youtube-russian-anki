@@ -16,15 +16,14 @@ class AnkiCard:
 
 
 FRONT_TEMPLATE = """
-<div class="sentence">{{RussianSentence}}</div>
-<div class="audio audio-front">{{SentenceAudio}}</div>
+<div class="prompt">{{EnglishTranslation}}</div>
 """
 
 BACK_TEMPLATE = """
 {{FrontSide}}
 <hr id="answer">
-<div class="translation">{{EnglishTranslation}}</div>
-<div class="audio audio-back">{{SentenceAudio}}</div>
+<div class="sentence">{{RussianSentence}}</div>
+<div class="audio">{{SentenceAudio}}</div>
 <div class="glosses">{{WordGlosses}}</div>
 """
 
@@ -37,11 +36,9 @@ CSS = """
   color: #111;
   background: #fff;
 }
+.prompt { margin-bottom: 18px; }
 .sentence { margin-bottom: 18px; }
 .audio { margin: 16px 0; }
-.audio-front { font-size: 20px; }
-.audio-back { font-size: 18px; }
-.translation { margin-top: 18px; font-size: 24px; }
 .glosses { margin-top: 18px; font-size: 20px; white-space: pre-line; }
 """
 
@@ -134,7 +131,6 @@ class AnkiConnectClient:
         }
         if card.sentence_audio_path:
             filename = card.sentence_audio_path.name
-            fields["SentenceAudio"] = f"[sound:{filename}]"
             note["audio"] = [
                 {
                     "path": str(card.sentence_audio_path.resolve()),

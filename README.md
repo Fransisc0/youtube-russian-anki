@@ -100,13 +100,12 @@ Chrome does not allow ordinary scripts to silently install unpacked extensions. 
 
 Front:
 
-- Russian sentence
-- Sentence audio, playable/autoplayable by Anki
+- English sentence translation
 
 Back:
 
-- English sentence translation
-- Sentence audio replay button
+- Russian sentence
+- Sentence audio button
 - Word glosses, one per line:
 
 ```text
