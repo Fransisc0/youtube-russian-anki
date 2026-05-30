@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,9 +18,24 @@ class VideoAssets:
     captions: list[CaptionCue]
 
 
-def require_command(name: str) -> None:
-    if shutil.which(name) is None:
-        raise RuntimeError(f"Required command is not on PATH: {name}")
+def yt_dlp_command() -> list[str]:
+    executable = shutil.which("yt-dlp")
+    if executable:
+        return [executable]
+    return [sys.executable, "-m", "yt_dlp"]
+
+
+def ffmpeg_command() -> str:
+    executable = shutil.which("ffmpeg")
+    if executable:
+        return executable
+    try:
+        import imageio_ffmpeg
+    except ImportError as exc:
+        raise RuntimeError(
+            "ffmpeg is required. Install project dependencies or put ffmpeg on PATH."
+        ) from exc
+    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def _run(args: list[str], cwd: Path) -> None:
@@ -31,12 +47,12 @@ def _run(args: list[str], cwd: Path) -> None:
 
 
 def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> VideoAssets:
-    require_command("yt-dlp")
+    yt_dlp = yt_dlp_command()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     info = json.loads(
         subprocess.check_output(
-            ["yt-dlp", "--skip-download", "--dump-single-json", video_url],
+            [*yt_dlp, "--skip-download", "--dump-single-json", video_url],
             text=True,
         )
     )
@@ -49,7 +65,7 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
 
     _run(
         [
-            "yt-dlp",
+            *yt_dlp,
             "--write-sub",
             "--write-auto-sub",
             "--sub-langs",
@@ -72,7 +88,7 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
 
     _run(
         [
-            "yt-dlp",
+            *yt_dlp,
             "-f",
             "bestaudio",
             "-x",
@@ -92,12 +108,12 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
 
 
 def clip_audio(source: Path, start: float, end: float, target: Path) -> Path:
-    require_command("ffmpeg")
+    ffmpeg = ffmpeg_command()
     target.parent.mkdir(parents=True, exist_ok=True)
     duration = max(0.25, end - start)
     _run(
         [
-            "ffmpeg",
+            ffmpeg,
             "-y",
             "-ss",
             f"{start:.3f}",
