@@ -8,7 +8,7 @@ class CoreWordsTests(unittest.TestCase):
         info = lookup_core_word("\u043c\u044b")
         self.assertIsNotNone(info)
         self.assertEqual(info.english, "we")
-        self.assertEqual(info.ipa, "mɨ")
+        self.assertEqual(info.ipa, "m\u0268")
 
     def test_unknown_returns_none(self):
         self.assertIsNone(lookup_core_word("nonexistent"))

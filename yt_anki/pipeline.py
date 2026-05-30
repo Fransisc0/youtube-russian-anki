@@ -40,7 +40,7 @@ def format_gloss(lemma: str, info: WordInfo) -> str:
     if ipa and not (ipa.startswith("/") and ipa.endswith("/")):
         ipa = f"/{ipa}/"
     ipa_part = f", {ipa}" if ipa else ", IPA unavailable"
-    english = info.english or "unavailable"
+    english = info.english or "dictionary meaning unavailable"
     return f"{lemma} ({lemma}{ipa_part}) - {english}"
 
 
@@ -115,8 +115,8 @@ class VideoProcessor:
                 progress("Clipping sentence audio", index, len(sentences))
                 audio_clip = clip_audio(
                     assets.audio_path,
-                    sentence.start,
-                    sentence.end,
+                    max(0.0, sentence.start - self.settings.audio_pad_before),
+                    sentence.end + self.settings.audio_pad_after,
                     self.settings.media_dir / "downloads" / f"{assets.video_id}_{index:04d}.mp3",
                 )
             except Exception as exc:  # keep card creation going without audio
@@ -155,23 +155,6 @@ class VideoProcessor:
         except Exception as exc:
             errors.append(f"Wiktionary lookup failed for {lemma}: {exc}")
             info = WordInfo(lemma=lemma, ipa="", english="", source_url="")
-        if not info.english:
-            try:
-                english = self.translator.translate(
-                    TranslationRequest(
-                        text=lemma,
-                        source_lang=language,
-                        target_lang=self.settings.target_language,
-                    )
-                )
-                info = WordInfo(
-                    lemma=info.lemma,
-                    ipa=info.ipa,
-                    english=english,
-                    source_url=info.source_url,
-                )
-            except Exception as exc:
-                errors.append(f"Word translation failed for {lemma}: {exc}")
         if not info.ipa:
             info = WordInfo(
                 lemma=info.lemma,

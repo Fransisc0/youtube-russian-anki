@@ -143,15 +143,33 @@ def parse_vtt(contents: str) -> list[CaptionCue]:
 def parse_json3(contents: str) -> list[CaptionCue]:
     payload = json.loads(contents)
     cues: list[CaptionCue] = []
-    for event in payload.get("events", []):
+    events = payload.get("events", [])
+    for event_index, event in enumerate(events):
         segments = event.get("segs") or []
-        text = clean_caption_text("".join(segment.get("utf8", "") for segment in segments))
-        if not text:
+        if not segments:
             continue
-        start = float(event.get("tStartMs", 0)) / 1000
-        duration = float(event.get("dDurationMs", 0)) / 1000
-        end = start + max(duration, 0.25)
-        cues.append(CaptionCue(start=start, end=end, text=text))
+        event_start = float(event.get("tStartMs", 0)) / 1000
+        event_duration = float(event.get("dDurationMs", 0)) / 1000
+        event_end = event_start + max(event_duration, 0.25)
+        if event_index + 1 < len(events):
+            next_event_start = float(events[event_index + 1].get("tStartMs", 0)) / 1000
+            if next_event_start > event_start:
+                event_end = min(event_end, next_event_start)
+        timed_segments: list[tuple[float, str]] = []
+        for segment in segments:
+            text = clean_caption_text(segment.get("utf8", ""))
+            if not text:
+                continue
+            offset = float(segment.get("tOffsetMs", 0)) / 1000
+            timed_segments.append((event_start + offset, text))
+        for index, (start, text) in enumerate(timed_segments):
+            if index + 1 < len(timed_segments):
+                end = timed_segments[index + 1][0]
+            else:
+                end = event_end
+            if end <= start:
+                end = start + 0.12
+            cues.append(CaptionCue(start=start, end=end, text=text))
     return cues
 
 

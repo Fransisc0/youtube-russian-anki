@@ -46,9 +46,9 @@ def parse_wiktionary_wikitext(lemma: str, wikitext: str) -> WordInfo:
     glosses: list[str] = []
     for match in _GLOSS_RE.finditer(body):
         cleaned = _strip_wiki_markup(match.group(1))
-        if cleaned and not cleaned.startswith(("Used to", "Alternative form")):
+        if cleaned and not cleaned.startswith(("Used to", "Alternative form")) and cleaned not in glosses:
             glosses.append(cleaned)
-        if len(glosses) >= 2:
+        if len(glosses) >= 5:
             break
 
     return WordInfo(

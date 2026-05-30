@@ -111,8 +111,9 @@ govorit (govorit, /govorit/) - to speak
 
 - V1 stops if no usable transcript exists. It does not run Whisper.
 - IPA is taken from Wiktionary when available. Missing IPA is shown as `IPA unavailable`.
-- Word meanings are taken from Wiktionary when available, with a fallback word translation from the configured sentence translator.
+- Word meanings are dictionary-only: Wiktionary plus a small built-in core-word dictionary. If no dictionary meaning is found, the card says `dictionary meaning unavailable`.
 - Sentence translation uses Argos Translate by default. Set `TRANSLATION_PROVIDER=deepl` only if you want to use a DeepL API key.
+- Sentence audio uses YouTube `json3` word/segment timing when available, with small configurable padding from `AUDIO_PAD_BEFORE` and `AUDIO_PAD_AFTER`.
 - The first time a lemma is encountered, the sentence can become a card. Seen lemmas are tracked in `data/learner.sqlite3`.
 - The local service defaults to port `8766` so it does not conflict with AnkiConnect on `8765`.
 

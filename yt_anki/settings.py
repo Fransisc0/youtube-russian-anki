@@ -26,6 +26,8 @@ class Settings:
     anki_model_name: str
     learner_language: str
     target_language: str
+    audio_pad_before: float
+    audio_pad_after: float
     data_dir: Path
 
     @property
@@ -50,5 +52,7 @@ def get_settings() -> Settings:
         anki_model_name=os.getenv("ANKI_MODEL_NAME", "YouTube Russian Sentence"),
         learner_language=os.getenv("LEARNER_LANGUAGE", "ru"),
         target_language=os.getenv("TARGET_LANGUAGE", "EN-US"),
+        audio_pad_before=float(os.getenv("AUDIO_PAD_BEFORE", "0.08")),
+        audio_pad_after=float(os.getenv("AUDIO_PAD_AFTER", "0.12")),
         data_dir=data_dir,
     )
