@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from yt_anki.anki import AnkiCard, BACK_TEMPLATE
+from yt_anki.anki import AnkiCard, AnkiConnectClient, BACK_TEMPLATE
 from yt_anki.pipeline import format_gloss, format_timestamp
 from yt_anki.wiktionary import WordInfo
 
@@ -32,6 +32,27 @@ class AnkiPayloadTests(unittest.TestCase):
 
     def test_back_template_includes_audio_replay(self):
         self.assertIn("{{SentenceAudio}}", BACK_TEMPLATE)
+
+    def test_add_card_sets_sound_field(self):
+        calls = []
+
+        class FakeClient(AnkiConnectClient):
+            def invoke(self, action, **params):
+                calls.append((action, params))
+                return 123
+
+        card = AnkiCard(
+            russian_sentence="test",
+            sentence_audio_path=Path("clip.mp3"),
+            english_translation="test",
+            word_glosses="word",
+            video_title="video",
+            video_url="url",
+            timestamp="0:01",
+        )
+        FakeClient("unused").add_card("deck", "model", card)
+        note = calls[0][1]["note"]
+        self.assertEqual(note["fields"]["SentenceAudio"], "[sound:clip.mp3]")
 
     def test_format_timestamp(self):
         self.assertEqual(format_timestamp(65), "1:05")

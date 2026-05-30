@@ -134,6 +134,7 @@ class AnkiConnectClient:
         }
         if card.sentence_audio_path:
             filename = card.sentence_audio_path.name
+            fields["SentenceAudio"] = f"[sound:{filename}]"
             note["audio"] = [
                 {
                     "path": str(card.sentence_audio_path.resolve()),

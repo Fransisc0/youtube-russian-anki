@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .anki import AnkiCard, AnkiConnectClient
 from .db import LearnerDb
+from .ipa import approximate_russian_ipa
 from .language import RussianLemmatizer, unique_lemmas
 from .media import clip_audio, fetch_video_assets
 from .progress import ProgressCallback
@@ -115,7 +116,7 @@ class VideoProcessor:
                     assets.audio_path,
                     sentence.start,
                     sentence.end,
-                    self.settings.media_dir / "clips" / f"{assets.video_id}_{index:04d}.mp3",
+                    self.settings.media_dir / "downloads" / f"{assets.video_id}_{index:04d}.mp3",
                 )
             except Exception as exc:  # keep card creation going without audio
                 errors.append(f"Audio clip failed for sentence {index}: {exc}")
@@ -167,4 +168,11 @@ class VideoProcessor:
                 )
             except Exception as exc:
                 errors.append(f"Word translation failed for {lemma}: {exc}")
+        if not info.ipa:
+            info = WordInfo(
+                lemma=info.lemma,
+                ipa=approximate_russian_ipa(lemma),
+                english=info.english,
+                source_url=info.source_url,
+            )
         return info
