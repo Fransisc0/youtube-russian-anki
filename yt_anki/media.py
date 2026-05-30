@@ -7,7 +7,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from .transcript import CaptionCue, parse_vtt
+from .transcript import CaptionCue, parse_json3, parse_vtt
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,7 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
 
     video_id = info.get("id", "video")
     title = info.get("title", video_id)
-    base = output_dir / f"{video_id}"
+    output_template = f"{video_id}.%(ext)s"
 
     _run(
         [
@@ -71,18 +71,22 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
             "--sub-langs",
             language,
             "--sub-format",
-            "vtt",
+            "json3/vtt",
             "--skip-download",
             "-o",
-            str(base) + ".%(ext)s",
+            output_template,
             video_url,
         ],
         output_dir,
     )
-    subtitle_files = sorted(output_dir.glob(f"{video_id}.{language}*.vtt"))
+    subtitle_files = sorted(output_dir.glob(f"{video_id}.{language}*.json3"))
+    subtitle_parser = parse_json3
+    if not subtitle_files:
+        subtitle_files = sorted(output_dir.glob(f"{video_id}.{language}*.vtt"))
+        subtitle_parser = parse_vtt
     if not subtitle_files:
         raise RuntimeError(f"No usable {language} transcript was downloaded for this video.")
-    captions = parse_vtt(subtitle_files[0].read_text(encoding="utf-8"))
+    captions = subtitle_parser(subtitle_files[0].read_text(encoding="utf-8"))
     if not captions:
         raise RuntimeError(f"The downloaded {language} transcript did not contain usable cues.")
 
@@ -95,7 +99,7 @@ def fetch_video_assets(video_url: str, language: str, output_dir: Path) -> Video
             "--audio-format",
             "mp3",
             "-o",
-            str(base) + ".%(ext)s",
+            output_template,
             video_url,
         ],
         output_dir,
