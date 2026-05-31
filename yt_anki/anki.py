@@ -62,6 +62,24 @@ CSS = """
   background: #f0f0f0;
   border-bottom: 2px dotted #8a8a8a;
 }
+.gender-masc { color: #2d5f8b; }
+.gender-femn { color: #9a4b5a; }
+.gender-neut { color: #4f5661; }
+.verb-word,
+.motion-word {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.1em;
+  outline: none;
+}
+.verb-word {
+  border-bottom: 2px solid #8aa6bd;
+}
+.motion-word {
+  border-bottom: 2px solid #7c9f6f;
+  background: #eef6e9;
+  border-radius: 0.22em;
+}
 .case-key {
   display: flex;
   flex-wrap: wrap;
@@ -74,6 +92,19 @@ CSS = """
   padding: 2px 7px;
   border-radius: 999px;
   color: #222;
+}
+.gender-key-label,
+.verb-key-label,
+.motion-key-label {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f3f3f3;
+}
+.verb-key-label { border-bottom: 2px solid #8aa6bd; }
+.motion-key-label {
+  background: #eef6e9;
+  border-bottom: 2px solid #7c9f6f;
 }
 .case-popover {
   display: none;
@@ -94,7 +125,11 @@ CSS = """
   text-align: left;
 }
 .case-word:hover .case-popover,
-.case-word:focus .case-popover {
+.case-word:focus .case-popover,
+.verb-word:hover .case-popover,
+.verb-word:focus .case-popover,
+.motion-word:hover .case-popover,
+.motion-word:focus .case-popover {
   display: block;
 }
 .case-title,
@@ -117,6 +152,32 @@ CSS = """
   width: 42px;
   color: #555;
   font-weight: 600;
+}
+.motion-popover {
+  min-width: 280px;
+  max-width: 360px;
+}
+.motion-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.motion-table th,
+.motion-table td {
+  padding: 4px 5px;
+  border-top: 1px solid #eee;
+  vertical-align: top;
+}
+.motion-table th {
+  width: 72px;
+  color: #334;
+}
+.motion-table span {
+  color: #666;
+  font-size: 12px;
+}
+.motion-current {
+  background: #f4faef;
 }
 """
 

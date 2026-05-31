@@ -68,6 +68,15 @@ class AnkiPayloadTests(unittest.TestCase):
         self.assertIn("RussianSentenceMarked", MODEL_FIELDS)
         self.assertLess(MODEL_FIELDS.index("RussianSentence"), MODEL_FIELDS.index("RussianSentenceMarked"))
 
+    def test_css_includes_gender_verb_and_motion_styles(self):
+        from yt_anki.anki import CSS
+
+        self.assertIn(".gender-masc", CSS)
+        self.assertIn(".gender-femn", CSS)
+        self.assertIn(".gender-neut", CSS)
+        self.assertIn(".verb-word", CSS)
+        self.assertIn(".motion-word", CSS)
+
     def test_existing_model_adds_missing_marked_sentence_field(self):
         calls = []
 
