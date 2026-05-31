@@ -131,6 +131,7 @@ class VideoProcessor:
                 video_title=assets.video_title,
                 video_url=video_url,
                 timestamp=format_timestamp(sentence.start),
+                russian_sentence_marked=self.lemmatizer.mark_sentence(sentence.text),
             )
             progress("Adding card to Anki", index, len(sentences))
             self.anki.add_card(self.settings.anki_deck_name, self.settings.anki_model_name, card)

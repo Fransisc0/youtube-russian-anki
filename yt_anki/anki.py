@@ -13,6 +13,7 @@ class AnkiCard:
     video_title: str
     video_url: str
     timestamp: str
+    russian_sentence_marked: str = ""
 
 
 FRONT_TEMPLATE = """
@@ -22,7 +23,10 @@ FRONT_TEMPLATE = """
 BACK_TEMPLATE = """
 {{FrontSide}}
 <hr id="answer">
-<div class="sentence">{{RussianSentence}}</div>
+<div class="sentence">
+{{#RussianSentenceMarked}}{{RussianSentenceMarked}}{{/RussianSentenceMarked}}
+{{^RussianSentenceMarked}}{{RussianSentence}}{{/RussianSentenceMarked}}
+</div>
 <div class="audio">{{SentenceAudio}}</div>
 <div class="glosses">{{WordGlosses}}</div>
 """
@@ -40,7 +44,92 @@ CSS = """
 .sentence { margin-bottom: 18px; }
 .audio { margin: 16px 0; }
 .glosses { margin-top: 18px; font-size: 20px; white-space: pre-line; }
+.case-word {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.12em;
+  border-radius: 0.22em;
+  color: #111;
+  outline: none;
+}
+.case-nomn { background: #dcecff; }
+.case-gent { background: #ece4ff; }
+.case-datv { background: #ddf3e4; }
+.case-accs { background: #fff0c7; }
+.case-ablt { background: #f8dce2; }
+.case-loct { background: #d9f1ef; }
+.case-unknown {
+  background: #f0f0f0;
+  border-bottom: 2px dotted #8a8a8a;
+}
+.case-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.case-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #222;
+}
+.case-popover {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  top: 1.8em;
+  min-width: 170px;
+  max-width: 240px;
+  padding: 8px 10px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  line-height: 1.25;
+  text-align: left;
+}
+.case-word:hover .case-popover,
+.case-word:focus .case-popover {
+  display: block;
+}
+.case-title,
+.case-meta {
+  display: block;
+  margin-bottom: 5px;
+}
+.case-title { font-weight: 700; }
+.case-meta { color: #555; }
+.case-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.case-table th,
+.case-table td {
+  padding: 2px 4px;
+  border-top: 1px solid #eee;
+}
+.case-table th {
+  width: 42px;
+  color: #555;
+  font-weight: 600;
+}
 """
+
+MODEL_FIELDS = [
+    "RussianSentence",
+    "RussianSentenceMarked",
+    "SentenceAudio",
+    "EnglishTranslation",
+    "WordGlosses",
+    "VideoTitle",
+    "VideoUrl",
+    "Timestamp",
+]
 
 
 class AnkiConnectClient:
@@ -67,20 +156,13 @@ class AnkiConnectClient:
     def ensure_model(self, model_name: str) -> None:
         names = self.invoke("modelNames")
         if model_name in names:
+            self.ensure_model_fields(model_name)
             self.update_model(model_name)
             return
         self.invoke(
             "createModel",
             modelName=model_name,
-            inOrderFields=[
-                "RussianSentence",
-                "SentenceAudio",
-                "EnglishTranslation",
-                "WordGlosses",
-                "VideoTitle",
-                "VideoUrl",
-                "Timestamp",
-            ],
+            inOrderFields=MODEL_FIELDS,
             css=CSS,
             cardTemplates=[
                 {
@@ -90,6 +172,13 @@ class AnkiConnectClient:
                 }
             ],
         )
+
+    def ensure_model_fields(self, model_name: str) -> None:
+        existing = self.invoke("modelFieldNames", modelName=model_name) or []
+        for field in MODEL_FIELDS:
+            if field not in existing:
+                self.invoke("modelFieldAdd", modelName=model_name, fieldName=field, index=len(existing))
+                existing.append(field)
 
     def update_model(self, model_name: str) -> None:
         self.invoke(
@@ -116,6 +205,7 @@ class AnkiConnectClient:
     def add_card(self, deck_name: str, model_name: str, card: AnkiCard) -> int:
         fields = {
             "RussianSentence": card.russian_sentence,
+            "RussianSentenceMarked": card.russian_sentence_marked,
             "SentenceAudio": "",
             "EnglishTranslation": card.english_translation,
             "WordGlosses": card.word_glosses,

@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from yt_anki.anki import AnkiCard, AnkiConnectClient, BACK_TEMPLATE, FRONT_TEMPLATE
+from yt_anki.anki import AnkiCard, AnkiConnectClient, BACK_TEMPLATE, FRONT_TEMPLATE, MODEL_FIELDS
 from yt_anki.pipeline import format_gloss, format_timestamp
 from yt_anki.wiktionary import WordInfo
 
@@ -37,6 +37,7 @@ class AnkiPayloadTests(unittest.TestCase):
 
     def test_back_template_includes_russian_and_one_audio(self):
         self.assertIn("{{RussianSentence}}", BACK_TEMPLATE)
+        self.assertIn("{{RussianSentenceMarked}}", BACK_TEMPLATE)
         self.assertIn("{{SentenceAudio}}", BACK_TEMPLATE)
         self.assertEqual(BACK_TEMPLATE.count("{{SentenceAudio}}"), 1)
 
@@ -60,7 +61,35 @@ class AnkiPayloadTests(unittest.TestCase):
         FakeClient("unused").add_card("deck", "model", card)
         note = calls[0][1]["note"]
         self.assertEqual(note["fields"]["SentenceAudio"], "")
+        self.assertIn("RussianSentenceMarked", note["fields"])
         self.assertEqual(note["audio"][0]["fields"], ["SentenceAudio"])
+
+    def test_new_model_includes_marked_sentence_field(self):
+        self.assertIn("RussianSentenceMarked", MODEL_FIELDS)
+        self.assertLess(MODEL_FIELDS.index("RussianSentence"), MODEL_FIELDS.index("RussianSentenceMarked"))
+
+    def test_existing_model_adds_missing_marked_sentence_field(self):
+        calls = []
+
+        class FakeClient(AnkiConnectClient):
+            def invoke(self, action, **params):
+                calls.append((action, params))
+                if action == "modelFieldNames":
+                    return [
+                        "RussianSentence",
+                        "SentenceAudio",
+                        "EnglishTranslation",
+                        "WordGlosses",
+                        "VideoTitle",
+                        "VideoUrl",
+                        "Timestamp",
+                    ]
+                return None
+
+        FakeClient("unused").ensure_model_fields("model")
+
+        add_calls = [params for action, params in calls if action == "modelFieldAdd"]
+        self.assertEqual(add_calls[0]["fieldName"], "RussianSentenceMarked")
 
     def test_format_timestamp(self):
         self.assertEqual(format_timestamp(65), "1:05")
